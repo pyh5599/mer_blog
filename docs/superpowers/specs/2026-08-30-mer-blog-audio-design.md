@@ -74,8 +74,8 @@ mer_blog/
 - 요청: `POST https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=...`
   body `{input:{ssml}, voice:{languageCode:"ko-KR", name}, audioConfig:{audioEncoding:"MP3", speakingRate:1.0}, enableTimePointing:["SSML_MARK"]}`.
   응답 `audioContent`(base64), `timepoints:[{markName, timeSeconds}]`.
-- 청크 mp3 길이는 ffprobe로 측정. 청크별 timepoint에 누적 오프셋을 더해 전체 `starts` 생성.
-- 청크 mp3 결합: ffmpeg concat demuxer (`-c copy`).
+- 청크 mp3 길이는 mutagen으로 측정(ffmpeg 불필요). 청크별 timepoint에 누적 오프셋을 더해 전체 `starts` 생성.
+- 청크 mp3 결합: CBR mp3 바이트 결합 (Google 출력은 ID3 없는 CBR 프레임 스트림).
 - timepoints가 비어 있으면(음성이 미지원) 문자 수 비례로 시작 시각 추정 — 로그에 경고.
 - 재시도: HTTP 429/5xx는 지수 백오프 3회.
 
@@ -113,7 +113,7 @@ python pipeline/run.py [--limit N] [--backfill N] [--dry-run] [--log-no ID]
 ### GitHub Actions (`daily.yml`)
 
 - 트리거: `schedule` 매일 `0 22 * * *`, `0 4 * * *`(UTC; KST 07:00, 13:00) + `workflow_dispatch`.
-- 단계: checkout → setup-python 3.11 → apt ffmpeg → pip install → `python pipeline/run.py`
+- 단계: checkout → setup-python 3.11 → pip install → `python pipeline/run.py`
   (`GOOGLE_TTS_API_KEY` secret) → `site/` 변경 있으면 커밋·푸시 (`github-actions[bot]`) → `actions/upload-pages-artifact`(site/) → `actions/deploy-pages`.
 - `concurrency` 그룹으로 동시 실행 방지.
 
