@@ -1,4 +1,5 @@
 """Naver blog RSS parsing and post HTML fetching."""
+from __future__ import annotations
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 import xml.etree.ElementTree as ET
