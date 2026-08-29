@@ -44,7 +44,7 @@ def _paragraph_texts(soup: BeautifulSoup) -> list[str]:
         for cls in EXCLUDE_CLASSES:
             for node in main.select(f".{cls}"):
                 node.decompose()
-        return [p.get_text(" ", strip=True) for p in main.select("p.se-text-paragraph")]
+        return [p.get_text("") for p in main.select("p.se-text-paragraph")]
     legacy = soup.select_one("#postViewArea")
     if legacy is not None:
         return [
