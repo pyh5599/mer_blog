@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2937">
+<title>메르의 블로그</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="bar">
+  <button id="back" class="icon hidden" aria-label="목록으로">←</button>
+  <h1 id="title">메르의 블로그</h1>
+  <div class="font-ctl">
+    <button id="font-down" class="icon" aria-label="글씨 작게">A−</button>
+    <button id="font-up" class="icon" aria-label="글씨 크게">A+</button>
+  </div>
+</header>
+
+<main id="list" class="view"></main>
+
+<main id="player" class="view hidden">
+  <article id="captions"></article>
+  <footer class="controls">
+    <input id="seek" type="range" min="0" max="1000" value="0" aria-label="재생 위치">
+    <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    <div class="buttons">
+      <button id="prev" class="icon" aria-label="이전 글">⏮</button>
+      <button id="back15" class="icon" aria-label="15초 뒤로">↺15</button>
+      <button id="play" class="icon big" aria-label="재생">▶</button>
+      <button id="fwd15" class="icon" aria-label="15초 앞으로">↻15</button>
+      <button id="rate" class="icon" aria-label="배속">1.0×</button>
+    </div>
+  </footer>
+</main>
+
+<div id="toast" class="hidden"></div>
+<audio id="audio" preload="metadata"></audio>
+<script src="./app.js"></script>
+</body>
+</html>

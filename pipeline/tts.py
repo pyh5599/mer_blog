@@ -108,4 +108,11 @@ def synthesize(sentences: list[str], api_key: str, voice: str | None = None) -> 
         offset += dur
     if fallback:
         log.warning("timepoints missing for some chunks; used length-based estimate")
-    return SynthResult(mp3=b"".join(parts), starts=starts, duration=round(offset, 3))
+    joined = b"".join(parts)
+    if len(parts) > 1:
+        # Byte-concatenation relies on Google emitting plain CBR frames (no Xing header).
+        # If a header made the joined file "look" shorter, players would mis-seek; flag it.
+        joined_dur = mp3_duration(joined)
+        if abs(joined_dur - offset) > 1.0:
+            log.warning("joined mp3 duration %.1fs != chunk sum %.1fs; check mp3 concat", joined_dur, offset)
+    return SynthResult(mp3=joined, starts=starts, duration=round(offset, 3))
