@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 from pipeline import tts
@@ -33,8 +34,8 @@ def test_synthesize_accumulates_offsets():
 
     def fake_request(ssml, api_key, voice):
         calls.append(ssml)
-        n = ssml.count("<mark")
-        return b"MP3" + bytes([len(calls)]), [{"markName": f"s{i}", "timeSeconds": i * 1.0} for i in range(n)]
+        marks = re.findall(r'<mark name="(s\d+)"/>', ssml)
+        return b"MP3" + bytes([len(calls)]), [{"markName": m, "timeSeconds": k * 1.0} for k, m in enumerate(marks)]
 
     with patch.object(tts, "_request", side_effect=fake_request), patch.object(
         tts, "mp3_duration", return_value=10.0
