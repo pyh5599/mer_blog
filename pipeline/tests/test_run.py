@@ -6,7 +6,8 @@ from pipeline.fetch import PostRef
 
 
 def _p(i):
-    return PostRef(log_no=str(i), title=f"t{i}", published="2026-08-30T08:05:08+09:00", url=f"u{i}")
+    # higher i = newer
+    return PostRef(log_no=str(i), title=f"t{i}", published=f"2026-08-{i:02d}T08:05:08+09:00", url=f"u{i}")
 
 
 def test_select_pending_backfill_when_index_empty():
@@ -15,11 +16,12 @@ def test_select_pending_backfill_when_index_empty():
     assert [p.log_no for p in sel] == [str(i) for i in range(21, 51)]  # oldest first
 
 
-def test_select_pending_skips_done_and_ignores_backfill_when_index_nonempty():
-    posts = [_p(i) for i in range(50, 0, -1)]
-    index = [{"id": str(i)} for i in range(50, 45, -1)]  # 50..46 done
+def test_select_pending_only_newer_than_oldest_indexed():
+    posts = [_p(i) for i in range(30, 0, -1)]
+    # 20..25 done (oldest indexed = 20); 26..30 new; 21 failed earlier; 1..19 older than window
+    index = [{"id": str(i), "published": _p(i).published} for i in [20, 22, 23, 24, 25]]
     sel = run.select_pending(posts, index=index, backfill=3)
-    assert [p.log_no for p in sel] == [str(i) for i in range(1, 46)]
+    assert [p.log_no for p in sel] == ["21", "26", "27", "28", "29", "30"]
 
 
 def test_process_post_writes_files(tmp_path):

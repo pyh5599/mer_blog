@@ -31,11 +31,19 @@ def save_index(path: Path, index: list[dict]) -> None:
 
 
 def select_pending(posts: list[PostRef], index: list[dict], backfill: int) -> list[PostRef]:
-    """Posts not yet in index, oldest first. First run is capped to `backfill` newest."""
+    """Posts not yet in index, oldest first.
+
+    First run is capped to the `backfill` newest posts. Later runs only look at posts
+    published on/after the oldest indexed post, so the remaining older RSS entries are
+    never pulled in; a failed post inside that window is retried.
+    """
     done = {e["id"] for e in index}
     pending = [p for p in posts if p.log_no not in done]  # newest first
     if not index:
         pending = pending[:backfill]
+    else:
+        floor = min(e["published"] for e in index)
+        pending = [p for p in pending if p.published >= floor]
     return list(reversed(pending))
 
 
