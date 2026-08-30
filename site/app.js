@@ -165,8 +165,24 @@
     h("seekto", (d) => { if (d.seekTime != null) audio.currentTime = d.seekTime; });
   }
 
+  // ---- password gate (client-side only: keeps strangers out, not a real secret)
+  const PW_HASH = 2576725674;
+  const fnv = (str) => { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+  function boot() {
+    $("gate").classList.add("hidden");
+    loadIndex().then(() => { const id = location.hash.slice(1); if (id) openPost(id); });
+  }
+  if (ls.get("auth", 0) === PW_HASH) boot();
+  else {
+    $("gate").classList.remove("hidden");
+    $("gate-form").onsubmit = (e) => {
+      e.preventDefault();
+      if (fnv($("gate-pw").value.trim()) === PW_HASH) { ls.set("auth", PW_HASH); boot(); }
+      else { $("gate-err").classList.remove("hidden"); $("gate-pw").value = ""; $("gate-pw").focus(); }
+    };
+  }
+
   // ---- boot
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
-  loadIndex().then(() => { const id = location.hash.slice(1); if (id) openPost(id); });
   window.addEventListener("pagehide", savePos);
 })();

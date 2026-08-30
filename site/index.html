@@ -37,6 +37,14 @@
   </footer>
 </main>
 
+<div id="gate" class="hidden">
+  <form id="gate-form">
+    <h2>메르의 블로그</h2>
+    <input id="gate-pw" type="password" inputmode="numeric" placeholder="비밀번호" autocomplete="current-password" autofocus>
+    <button type="submit">들어가기</button>
+    <p id="gate-err" class="hidden">비밀번호가 틀렸습니다</p>
+  </form>
+</div>
 <div id="toast" class="hidden"></div>
 <audio id="audio" preload="metadata"></audio>
 <script src="./app.js"></script>

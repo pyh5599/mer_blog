@@ -40,3 +40,11 @@ html, body { margin: 0; background: var(--bg); color: var(--fg);
 .buttons .big { font-size: 26px; min-width: 64px; min-height: 56px; background: var(--accent); border: none; }
 #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #dc2626;
   color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 3; }
+#gate { position: fixed; inset: 0; z-index: 10; background: var(--bar); color: var(--bar-fg);
+  display: flex; align-items: center; justify-content: center; padding: 24px; }
+#gate form { width: 100%; max-width: 320px; display: grid; gap: 12px; text-align: center; }
+#gate h2 { margin: 0 0 8px; font-size: 22px; }
+#gate input { font-size: 20px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.35);
+  background: rgba(255,255,255,.08); color: inherit; text-align: center; letter-spacing: .2em; }
+#gate button { font-size: 18px; padding: 12px; border-radius: 8px; border: none; background: var(--accent); color: #fff; }
+#gate p { margin: 0; color: #fca5a5; font-size: 14px; }

@@ -1,4 +1,4 @@
-const SHELL = "shell-v1";
+const SHELL = "shell-v2";
 const DATA = "data-v1";
 const SHELL_FILES = ["./", "./index.html", "./app.js", "./style.css", "./manifest.webmanifest", "./icon.svg"];
 
