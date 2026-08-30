@@ -44,14 +44,21 @@ cd site && python3 -m http.server 8000             # http://localhost:8000 에�
 
 ## 설정
 
-- 음성: 환경변수 `TTS_VOICE` (기본 `ko-KR-Neural2-A`). 남성 음성은 `ko-KR-Neural2-C`.
-  Actions에서 바꾸려면 repo **Settings → Variables**가 아닌 workflow `env`에 추가.
+- 비밀번호: 앱 첫 진입 시 한 번 묻고 브라우저에 기억합니다. 바꾸려면 `site/app.js`의 `PW_HASH`를
+  새 비밀번호의 FNV-1a 해시로 교체 (`node -e "let h=2166136261;for(const c of '새비번'){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}console.log(h)"`).
+  클라이언트 검사라 지나가는 사람을 막는 용도이지 진짜 보안은 아닙니다 (mp3 URL 직접 접근 가능).
+- 음성: 환경변수 `TTS_VOICE` (기본 `ko-KR-Chirp3-HD-Kore`, 여성). 남성은 `ko-KR-Chirp3-HD-Charon`.
+  Chirp3-HD는 SSML 타임스탬프를 안 주므로 문장마다 따로 합성해 이어붙입니다 (글당 요청 40~60회).
+  `ko-KR-Neural2-*`를 쓰면 청크 합성 + `<mark>` 타임스탬프 방식으로 동작합니다.
+  Actions에서 바꾸려면 workflow의 "Run pipeline" step `env`에 `TTS_VOICE`를 추가.
+  음성을 바꾼 뒤 기존 글을 다시 만들려면 `site/posts/`와 `site/index.json`(`[]`)을 비우고 실행.
 - 속도: `pipeline/config.py`의 `SPEAKING_RATE`.
 - 실행 시각: `.github/workflows/daily.yml`의 `cron` (UTC).
 
 ## 비용
 
-Google TTS Neural2는 월 100만 자까지 무료. 글 하나 약 3천 자, 월 30~40개면 무료 구간 안입니다.
+Google TTS는 음성 등급별로 월 무료 구간이 있습니다 (Chirp3-HD·Neural2 각 100만 자 수준 — 결제 페이지에서 확인).
+글 하나 약 3천 자, 월 30~40개면 무료 구간 안입니다.
 GitHub Actions/Pages는 공개 repo에서 무료.
 
 ## 주의
