@@ -25,7 +25,7 @@ site/       정적 웹 앱 (GitHub Pages 루트) + posts/<id>.mp3|json + index.j
 5. **Actions → daily → Run workflow** 수동 실행. 첫 실행은 최근 30개 글을 백필합니다 (10분 내외).
 6. 폰 Chrome에서 `https://<github계정>.github.io/<repo이름>/` 접속 → 메뉴 → *홈 화면에 추가*.
 
-이후엔 매일 01:00 / 14:00 KST에 새 글이 자동으로 추가됩니다.
+이후엔 매일 01:00 / 09:00 / 14:00 KST에 새 글이 자동으로 추가됩니다.
 
 팟캐스트 앱으로 듣고 싶으면 같은 주소의 `feed.xml`을 구독하면 됩니다 (캡션은 없음).
 
