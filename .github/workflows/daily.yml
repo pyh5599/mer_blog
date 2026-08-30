@@ -5,6 +5,9 @@ on:
     - cron: "0 16 * * *"   # 01:00 KST
     - cron: "0 0 * * *"    # 09:00 KST
     - cron: "0 5 * * *"    # 14:00 KST
+  push:
+    branches: [main]
+    paths: ["site/**"]     # deploy app changes without waiting for cron
   workflow_dispatch:
     inputs:
       limit:
