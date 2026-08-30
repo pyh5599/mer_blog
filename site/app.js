@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = "2026-08-30.2"; // bump on every site/ change — shown at list bottom so phones can confirm which build they run
+  const APP_VERSION = "2026-08-30.3"; // bump on every site/ change — shown at list bottom so phones can confirm which build they run
   const $ = (id) => document.getElementById(id);
   const audio = $("audio");
   const FONT_SIZES = [18, 22, 26, 30];

@@ -1,4 +1,4 @@
-const SHELL = "shell-v2";
+const SHELL = "shell-v3";
 const DATA = "data-v1";
 const SHELL_FILES = ["./", "./index.html", "./app.js", "./style.css", "./manifest.webmanifest", "./icon.svg"];
 
@@ -25,6 +25,8 @@ self.addEventListener("fetch", (e) => {
     );
     return;
   }
-  // shell: network first so updates land, cache fallback offline
-  e.respondWith(fetch(e.request).then((r) => { const copy = r.clone(); caches.open(SHELL).then((c) => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request)));
+  // shell: network first so updates land, cache fallback offline.
+  // no-cache bypasses the HTTP cache (GitHub Pages serves max-age=600) and revalidates via ETag,
+  // so a fresh deploy shows up on the next open instead of up to 10 minutes later
+  e.respondWith(fetch(e.request, { cache: "no-cache" }).then((r) => { const copy = r.clone(); caches.open(SHELL).then((c) => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request)));
 });
