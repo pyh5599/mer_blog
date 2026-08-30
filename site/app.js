@@ -1,4 +1,5 @@
 (() => {
+  const APP_VERSION = "2026-08-30.2"; // bump on every site/ change — shown at list bottom so phones can confirm which build they run
   const $ = (id) => document.getElementById(id);
   const audio = $("audio");
   const FONT_SIZES = [18, 22, 26, 30];
@@ -51,6 +52,10 @@
       card.onclick = () => openPost(e.id);
       list.appendChild(card);
     }
+    const v = document.createElement("p");
+    v.style.cssText = "text-align:center;color:var(--muted);font-size:12px;padding:12px 0 24px";
+    v.textContent = "버전 " + APP_VERSION;
+    list.appendChild(v);
   }
 
   // ---- player view
