@@ -4,7 +4,9 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from xml.sax.saxutils import escape
 
@@ -23,8 +25,16 @@ class SynthResult:
     duration: float
 
 
+_LIST_PREFIX = re.compile(r"^\d+\.\s*")
+
+
+def spoken_text(text: str) -> str:
+    """What the voice reads: drop the '12. ' list prefix (caption keeps it)."""
+    return _LIST_PREFIX.sub("", text) or text
+
+
 def _sentence_ssml(i: int, text: str) -> str:
-    return f'<mark name="s{i}"/>{escape(text)}<break time="300ms"/>'
+    return f'<mark name="s{i}"/>{escape(spoken_text(text))}<break time="300ms"/>'
 
 
 def build_ssml(sentences: list[str], indices: list[int]) -> str:
@@ -89,8 +99,32 @@ def _request(ssml: str, api_key: str, voice: str) -> tuple[bytes, list[dict]]:
     raise RuntimeError("unreachable")
 
 
+def supports_timepoints(voice: str) -> bool:
+    """Chirp 3 HD voices ignore SSML marks (verified 2026-08); others return them."""
+    return "Chirp" not in voice
+
+
+def synthesize_per_sentence(sentences: list[str], api_key: str, voice: str, workers: int = 4) -> SynthResult:
+    """One request per sentence; exact starts from each clip's measured length."""
+    def one(i: int) -> bytes:
+        ssml = f"<speak>{escape(spoken_text(sentences[i]))}<break time=\"300ms\"/></speak>"
+        audio, _ = _request(ssml, api_key, voice)
+        return audio
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        clips = list(ex.map(one, range(len(sentences))))
+    starts: list[float] = []
+    offset = 0.0
+    for clip in clips:
+        starts.append(round(offset, 3))
+        offset += mp3_duration(clip)
+    return SynthResult(mp3=b"".join(clips), starts=starts, duration=round(offset, 3))
+
+
 def synthesize(sentences: list[str], api_key: str, voice: str | None = None) -> SynthResult:
     voice = voice or config.VOICE_NAME
+    if not supports_timepoints(voice):
+        return synthesize_per_sentence(sentences, api_key, voice)
     starts: list[float] = []
     parts: list[bytes] = []
     offset = 0.0

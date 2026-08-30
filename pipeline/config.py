@@ -13,7 +13,7 @@ REQUEST_TIMEOUT = 20
 REQUEST_DELAY_SEC = 1.5
 
 LANGUAGE_CODE = "ko-KR"
-VOICE_NAME = os.environ.get("TTS_VOICE", "ko-KR-Neural2-A")
+VOICE_NAME = os.environ.get("TTS_VOICE", "ko-KR-Chirp3-HD-Kore")
 SPEAKING_RATE = 1.0
 MAX_SSML_BYTES = 4500
 TTS_ENDPOINT = "https://texttospeech.googleapis.com/v1beta1/text:synthesize"
