@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = "2026-08-30.3"; // bump on every site/ change — shown at list bottom so phones can confirm which build they run
+  const APP_VERSION = "2026-08-30.4"; // bump on every site/ change — shown at list bottom so phones can confirm which build they run
   const $ = (id) => document.getElementById(id);
   const audio = $("audio");
   const FONT_SIZES = [18, 22, 26, 30];
@@ -183,6 +183,7 @@
   $("back15").onclick = () => seekBy(-15);
   $("fwd15").onclick = () => seekBy(15);
   $("prev").onclick = () => { const p = neighbor(1); if (p) openPost(p.id, !audio.paused); };
+  $("next").onclick = () => { const n = neighbor(-1); if (n) openPost(n.id, !audio.paused); };
   const applyRate = () => { audio.playbackRate = RATES[state.rateIdx]; $("rate").textContent = RATES[state.rateIdx].toFixed(1) + "×"; };
   $("rate").onclick = () => { state.rateIdx = (state.rateIdx + 1) % RATES.length; ls.set("rateIdx", state.rateIdx); applyRate(); };
   state.rateIdx = ls.get("rateIdx", 0); applyRate();
