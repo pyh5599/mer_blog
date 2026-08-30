@@ -2,8 +2,8 @@ name: daily
 
 on:
   schedule:
-    - cron: "0 22 * * *"   # 07:00 KST
-    - cron: "0 4 * * *"    # 13:00 KST
+    - cron: "0 16 * * *"   # 01:00 KST
+    - cron: "0 5 * * *"    # 14:00 KST
   workflow_dispatch:
     inputs:
       limit:
