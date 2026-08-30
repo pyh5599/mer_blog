@@ -3,7 +3,7 @@
   const audio = $("audio");
   const FONT_SIZES = [18, 22, 26, 30];
   const RATES = [1.0, 1.2, 1.5, 2.0];
-  const state = { index: [], current: null, sentences: [], activeIdx: -1, userScrollUntil: 0, rateIdx: 0 };
+  const state = { index: [], current: null, sentences: [], activeIdx: -1, userScrollUntil: 0, rateIdx: 0, retryAudio: false };
 
   const ls = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -54,23 +54,20 @@
   }
 
   // ---- player view
-  async function openPost(id, autoplay = false) {
-    const entry = state.index.find((e) => e.id === id);
-    if (!entry) return;
-    let meta;
-    try {
-      const r = await fetch(`./posts/${id}.json`);
-      if (!r.ok) throw new Error(r.status);
-      meta = await r.json();
-    } catch (e) { toast("글을 불러오지 못했습니다"); return; }
-    if (state.current) savePos();
-    state.current = entry; state.sentences = meta.sentences; state.activeIdx = -1;
-
-    history.replaceState(null, "", "#" + id);
-    $("title").textContent = entry.title;
-    $("back").classList.remove("hidden");
-    $("list").classList.add("hidden");
-    $("player").classList.remove("hidden");
+  const metaCache = new Map();
+  async function getMeta(id) {
+    if (metaCache.has(id)) return metaCache.get(id);
+    const r = await fetch(`./posts/${id}.json`);
+    if (!r.ok) throw new Error(r.status);
+    const meta = await r.json();
+    metaCache.set(id, meta);
+    return meta;
+  }
+  function prefetchNext() {
+    const n = neighbor(-1);
+    if (n && !metaCache.has(n.id)) getMeta(n.id).catch(() => {});
+  }
+  function renderCaptions() {
     const cap = $("captions");
     cap.innerHTML = "";
     state.sentences.forEach((s) => {
@@ -79,16 +76,44 @@
       p.onclick = () => { audio.currentTime = s.start; audio.play().catch(() => {}); };
       cap.appendChild(p);
     });
+  }
+  async function loadCaptions(entry) {
+    try {
+      const meta = await getMeta(entry.id);
+      if (state.current !== entry) return;
+      state.sentences = meta.sentences;
+      state.activeIdx = -1;
+      renderCaptions();
+      updateCaption();
+    } catch (e) { if (state.current === entry && document.visibilityState === "visible") toast("자막을 불러오지 못했습니다"); }
+  }
+  function openPost(id, autoplay = false) {
+    const entry = state.index.find((e) => e.id === id);
+    if (!entry) return;
+    if (state.current) savePos();
+    state.current = entry; state.sentences = []; state.activeIdx = -1;
+
+    history.replaceState(null, "", "#" + id);
+    $("title").textContent = entry.title;
+    $("back").classList.remove("hidden");
+    $("list").classList.add("hidden");
+    $("player").classList.remove("hidden");
+    $("captions").innerHTML = "";
     window.scrollTo(0, 0);
     $("cur").textContent = "0:00";
     $("seek").value = 0;
     $("dur").textContent = fmt(entry.duration);
+
+    // audio starts first; captions load async and must never block playback
+    // (screen off: OS can kill fetches, but the media element keeps playing)
     audio.src = `./posts/${id}.mp3`;
     audio.playbackRate = RATES[state.rateIdx];
     const pos = ls.get("pos:" + id, 0);
     audio.addEventListener("loadedmetadata", () => { if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos; updateCaption(); }, { once: true });
     setMediaSession(entry);
     if (autoplay) audio.play().catch(() => {});
+    loadCaptions(entry);
+    prefetchNext();
   }
   function closePost() {
     savePos();
@@ -103,7 +128,7 @@
   $("back").onclick = closePost;
 
   function savePos() {
-    if (!state.current) return;
+    if (!state.current || audio.error) return; // a failed element reports currentTime 0 — keep the last good pos
     ls.set("pos:" + state.current.id, audio.currentTime);
   }
   function neighbor(delta) {
@@ -137,10 +162,14 @@
   audio.addEventListener("pause", () => { $("play").textContent = "▶"; savePos(); });
   audio.addEventListener("ended", () => {
     ls.set("done:" + state.current.id, true); ls.set("pos:" + state.current.id, 0);
-    const next = neighbor(1);
+    const next = neighbor(-1); // index is newest-first: -1 = chronologically next (newer)
     if (next) openPost(next.id, true); else closePost();
   });
-  audio.addEventListener("error", () => toast("오디오를 불러오지 못했습니다"));
+  audio.addEventListener("error", () => {
+    if (!state.current || !audio.error) return;
+    if (document.visibilityState === "visible") toast("오디오를 불러오지 못했습니다");
+    else state.retryAudio = true; // load died while screen was off — retry silently on return
+  });
   ["wheel", "touchmove"].forEach((ev) => window.addEventListener(ev, () => { state.userScrollUntil = Date.now() + 5000; }, { passive: true }));
 
   // ---- controls
@@ -148,11 +177,27 @@
   $("play").onclick = () => (audio.paused ? audio.play().catch(() => {}) : audio.pause());
   $("back15").onclick = () => seekBy(-15);
   $("fwd15").onclick = () => seekBy(15);
-  $("prev").onclick = () => { const p = neighbor(-1); if (p) openPost(p.id, !audio.paused); };
+  $("prev").onclick = () => { const p = neighbor(1); if (p) openPost(p.id, !audio.paused); };
   const applyRate = () => { audio.playbackRate = RATES[state.rateIdx]; $("rate").textContent = RATES[state.rateIdx].toFixed(1) + "×"; };
   $("rate").onclick = () => { state.rateIdx = (state.rateIdx + 1) % RATES.length; ls.set("rateIdx", state.rateIdx); applyRate(); };
   state.rateIdx = ls.get("rateIdx", 0); applyRate();
   $("seek").oninput = (e) => { if (audio.duration) audio.currentTime = audio.duration * e.target.value / 1000; };
+
+  // ---- keep screen on while playing (like video apps)
+  let wakeLock = null;
+  async function acquireWake() {
+    if (!("wakeLock" in navigator) || wakeLock) return;
+    try { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } catch {}
+  }
+  function releaseWake() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
+  audio.addEventListener("play", acquireWake);
+  audio.addEventListener("pause", releaseWake);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!audio.paused) acquireWake(); // OS drops the lock when the tab hides; re-grab on return
+    if (state.current && !state.sentences.length) loadCaptions(state.current); // captions fetch may have died while hidden
+    if (state.retryAudio && state.current) { state.retryAudio = false; openPost(state.current.id, true); }
+  });
 
   function setMediaSession(entry) {
     if (!("mediaSession" in navigator)) return;
@@ -160,7 +205,7 @@
     const h = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch {} };
     h("play", () => audio.play()); h("pause", () => audio.pause());
     h("seekbackward", () => seekBy(-15)); h("seekforward", () => seekBy(15));
-    h("nexttrack", () => { const n = neighbor(1); if (n) openPost(n.id, true); });
+    h("nexttrack", () => { const n = neighbor(-1); if (n) openPost(n.id, true); });
     h("previoustrack", () => $("prev").onclick());
     h("seekto", (d) => { if (d.seekTime != null) audio.currentTime = d.seekTime; });
   }
